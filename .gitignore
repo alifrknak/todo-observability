@@ -1,0 +1,6 @@
+/.vs
+/bin
+/obj
+/todos.db
+/todos.db-shm
+/todos.db-wal
