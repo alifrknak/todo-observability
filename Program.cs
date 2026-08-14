@@ -1,4 +1,8 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using TodoApi.Data;
@@ -26,7 +30,19 @@ builder.Services.AddOpenTelemetry()
             .AddEntityFrameworkCoreInstrumentation()
             .AddOtlpExporter(options =>
             {
-                options.Endpoint = new Uri("http://localhost:4317");
+                options.Endpoint = new Uri("http://localhost:4318/v1/traces");
+                options.Protocol = OtlpExportProtocol.HttpProtobuf;
+            });
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri("http://localhost:4318/v1/metrics");
+                options.Protocol = OtlpExportProtocol.HttpProtobuf;
             });
     });
 
