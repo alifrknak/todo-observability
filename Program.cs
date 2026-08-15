@@ -4,7 +4,6 @@ using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using TodoApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,31 +18,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 2. HttpClient Registration
 builder.Services.AddHttpClient();
 
-// 3. OpenTelemetry Configuration
+// 3. OpenTelemetry Metrics Configuration
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService("TodoService"))
-    .WithTracing(tracing =>
-    {
-        tracing
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddEntityFrameworkCoreInstrumentation()
-            .AddOtlpExporter(options =>
-            {
-                options.Endpoint = new Uri("http://localhost:4318/v1/traces");
-                options.Protocol = OtlpExportProtocol.HttpProtobuf;
-            });
-    })
     .WithMetrics(metrics =>
     {
         metrics
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddOtlpExporter(options =>
-            {
-                options.Endpoint = new Uri("http://localhost:4318/v1/metrics");
-                options.Protocol = OtlpExportProtocol.HttpProtobuf;
-            });
+            .AddMeter("Microsoft.EntityFrameworkCore")
+            .AddMeter("TodoService.Custom")
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter();
     });
 
 var app = builder.Build();
@@ -54,6 +40,9 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
 }
+
+// Expose /metrics endpoint for Prometheus to scrape
+app.MapPrometheusScrapingEndpoint();
 
 app.UseAuthorization();
 app.MapControllers();

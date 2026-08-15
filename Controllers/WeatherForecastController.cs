@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace todo.Controllers;
@@ -6,20 +7,25 @@ namespace todo.Controllers;
 [Route("[controller]")]
 public class WeatherForecastController : ControllerBase
 {
-    private static readonly string[] Summaries =
-    [
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    ];
 
+    static int statusCodeCounter = 0;
+        
     [HttpGet(Name = "GetWeatherForecast")]
-    public IEnumerable<WeatherForecast> Get()
+    public IActionResult Get()
     {
-        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        Thread.Sleep(Random.Shared.Next(1000));
+
+        statusCodeCounter++;
+        if (statusCodeCounter % 30 == 0)
         {
-            Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            TemperatureC = Random.Shared.Next(-20, 55),
-            Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-        })
-        .ToArray();
+            return StatusCode(500);
+        }
+        if (statusCodeCounter % 20 == 0)
+        {
+            return StatusCode(400);
+        }
+        return StatusCode(200);
+
+
     }
 }
